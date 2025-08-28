@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Empathetic Code Reviewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            100: '#1e293b',
+                            200: '#172033',
+                            300: '#0f172a',
+                            400: '#0a0f1d',
+                            500: '#0c1427',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(to bottom, #0f172a, #0c1427);
+            min-height: 100vh;
+        }
+        
+        .code-block {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        
+        /* Animation for feedback generation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        
+        pre {
+            background-color: #1a243b;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            position: relative;
+        }
+        
+        pre code {
+            color: #e2e8f0;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: rgba(30, 41, 59, 0.8);
+            border: none;
+            border-radius: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            color: #cbd5e1;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+        
+        .copy-btn:hover {
+            background: rgba(30, 41, 59, 1);
+            color: #f8fafc;
+        }
+        
+        .review-section {
+            border-left: 4px solid #3b82f6;
+            padding-left: 1rem;
+            margin: 1.5rem 0;
+        }
+        
+        .review-section h3 {
+            color: #93c5fd;
+            margin-bottom: 0.75rem;
+        }
+        
+        .gradient-border {
+            border: 1px solid transparent;
+            background: linear-gradient(#0f172a, #0f172a) padding-box,
+                        linear-gradient(to right, #3b82f6, #8b5cf6) border-box;
+        }
+    </style>
+</head>
+<body class="text-gray-200 min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-dark-400 shadow-lg py-5 px-6 gradient-border">
+        <div class="container mx-auto flex justify-center items-center">
+            <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 flex items-center">
+                <i class="fas fa-code mr-3"></i>Empathetic Code Reviewer
+            </h1>
+        </div>
+        <p class="text-center mt-2 text-gray-400">Transforming Critical Feedback into Constructive Growth</p>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Input Section -->
+            <div class="bg-dark-200 rounded-xl shadow-lg p-6 gradient-border">
+                <h2 class="text-xl font-semibold text-blue-300 mb-6 flex items-center">
+                    <i class="fas fa-pencil-alt mr-2"></i>Enter Your Code
+                </h2>
+                
+                <div class="mb-6">
+                    <label for="code" class="block text-sm font-medium text-gray-400 mb-2">Code Snippet</label>
+                    <textarea 
+                        id="code" 
+                        rows="12" 
+                        placeholder="Paste your code here..." 
+                        class="w-full bg-dark-100 border-2 border-dark-400 rounded-lg p-4 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    >def get_active_users(users):
+  results = []
+  for u in users:
+    if u.is_active == True and u.profile_complete == True:
+      results.append(u)
+  return results</textarea>
+                </div>
+                
+                <div class="mb-6">
+                    <label for="comment" class="block text-sm font-medium text-gray-400 mb-2">Review Comments (one per line)</label>
+                    <textarea 
+                        id="comment" 
+                        rows="4"
+                        placeholder="Enter your review comments (one per line)..." 
+                        class="w-full bg-dark-100 border-2 border-dark-400 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    >This is inefficient. Don't loop twice conceptually.
+Variable 'u' is a bad name.
+Boolean comparison '== True' is redundant.</textarea>
+                </div>
+                
+                <div class="flex space-x-4">
+                    <button 
+                        onclick="generateFeedback()" 
+                        class="flex items-center justify-center px-5 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-lg font-medium transition-all shadow-lg hover:shadow-blue-500/30 flex-1"
+                    >
+                        <i class="fas fa-sparkles mr-2"></i> Generate Feedback
+                    </button>
+                    
+                    <button 
+                        onclick="clearAll()" 
+                        class="flex items-center justify-center px-5 py-2.5 bg-dark-100 hover:bg-dark-400 border border-gray-700 rounded-lg font-medium transition-all"
+                    >
+                        <i class="fas fa-broom mr-2"></i> Clear
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Output Section -->
+            <div class="bg-dark-200 rounded-xl shadow-lg p-6 gradient-border">
+                <h2 class="text-xl font-semibold text-green-300 mb-6 flex items-center">
+                    <i class="fas fa-comment-dots mr-2"></i>Feedback
+                </h2>
+                
+                <div id="output" class="min-h-[300px] bg-dark-100 rounded-lg p-4 overflow-y-auto max-h-[500px]">
+                    <div class="text-gray-500 text-center py-12">
+                        <i class="fas fa-comment-slash text-4xl mb-3"></i>
+                        <p>Your feedback will appear here</p>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-end">
+                    <button 
+                        onclick="copyFeedback()" 
+                        id="copyButton"
+                        class="px-4 py-2 bg-dark-100 hover:bg-dark-400 rounded-lg text-sm font-medium transition-all flex items-center"
+                    >
+                        <i class="fas fa-copy mr-2"></i> Copy Feedback
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark-400 py-4 text-center text-gray-500 text-sm gradient-border mt-8">
+        <p>Empathetic Code Reviewer &copy; 2025 | Transforming Critical Feedback into Constructive Growth</p>
+    </footer>
+
+    <script>
+        // Generate feedback function
+        async function generateFeedback() {
+            const code = document.getElementById('code').value;
+            const comments = document.getElementById('comment').value.split('\n').filter(c => c.trim() !== '');
+            const output = document.getElementById('output');
+            
+            if (!code || comments.length === 0) {
+                output.innerHTML = `
+                    <div class="bg-red-400/10 border border-red-400/30 text-red-300 px-4 py-3 rounded-lg">
+                        <i class="fas fa-exclamation-circle mr-2"></i> Please enter both code and at least one comment.
+                    </div>
+                `;
+                return;
+            }
+
+            // Show loading state
+            output.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-3"></div>
+                    <p>Generating empathetic feedback...</p>
+                </div>
+            `;
+
+            try {
+                // In a real implementation, this would call your API
+                // For demonstration, we'll simulate a response after a delay
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Generate the formatted feedback according to guidelines
+                let feedback = `# Code Review Feedback\n\n`;
+                feedback += `## Original Code\n\`\`\`\n${code}\n\`\`\`\n\n`;
+                
+                // Add sections for each comment
+                comments.forEach((comment, index) => {
+                    feedback += `---\n\n`;
+                    feedback += `### Analysis of Comment: "${comment}"\n\n`;
+                    
+                    // Generate appropriate responses based on the comment
+                    if (comment.toLowerCase().includes('inefficient') || comment.toLowerCase().includes('loop')) {
+                        feedback += `* **Positive Rephrasing:** "Great start on the logic here! For better performance, especially with large user lists, we can make this more efficient by combining the checks."\n\n`;
+                        feedback += `* **The 'Why':** Iterating through a list and performing checks can become slow as the list grows. By using more direct methods like list comprehensions, we can often achieve the same result with cleaner and faster code.\n\n`;
+                        feedback += `* **Suggested Improvement:**\n\`\`\`python\ndef get_active_users(users):\n    return [user for user in users if user.is_active and user.profile_complete]\n\`\`\`\n\n`;
+                        feedback += `**Resource:** [Python List Comprehensions](https://realpython.com/list-comprehension-python/)\n\n`;
+                    } else if (comment.toLowerCase().includes('variable') || comment.toLowerCase().includes('name') || comment.includes("'u'")) {
+                        feedback += `* **Positive Rephrasing:** "Good work implementing the iteration logic! Using descriptive variable names can make the code more readable and maintainable for everyone on the team."\n\n`;
+                        feedback += `* **The 'Why':** Clear variable names serve as documentation and make code easier to understand. Single-letter variables can be confusing and increase cognitive load for other developers reading the code.\n\n`;
+                        feedback += `* **Suggested Improvement:**\n\`\`\`python\n# Instead of 'u', use a more descriptive name like 'user'\nfor user in users:\n    if user.is_active and user.profile_complete:\n        results.append(user)\n\`\`\`\n\n`;
+                        feedback += `**Resource:** [PEP 8 - Style Guide for Python Code](https://peps.python.org/pep-0008/#function-and-variable-names)\n\n`;
+                    } else if (comment.toLowerCase().includes('boolean') || comment.toLowerCase().includes('redundant') || comment.includes('== True')) {
+                        feedback += `* **Positive Rephrasing:** "Nice implementation of the conditional checks! We can make this even more Pythonic by removing the explicit comparison to True."\n\n`;
+                        feedback += `* **The 'Why':** In Python, conditions already evaluate to True or False, so explicit comparison with '== True' is unnecessary. This is a common convention that makes code cleaner and more readable.\n\n`;
+                        feedback += `* **Suggested Improvement:**\n\`\`\`python\n# Instead of '== True', use the boolean directly\nif user.is_active and user.profile_complete:\n    results.append(user)\n\`\`\`\n\n`;
+                        feedback += `**Resource:** [Truth Value Testing in Python](https://docs.python.org/3/library/stdtypes.html#truth-value-testing)\n\n`;
+                    } else {
+                        // Generic response for other types of comments
+                        feedback += `* **Positive Rephrasing:** "Thanks for sharing this code! I have a suggestion that might help improve clarity and maintainability."\n\n`;
+                        feedback += `* **The 'Why':** Following established coding conventions and best practices makes code easier to read, maintain, and debug for all team members.\n\n`;
+                        feedback += `* **Suggested Improvement:**\n\`\`\`python\n# Implementation suggestion would go here\n# based on the specific feedback provided\n\`\`\`\n\n`;
+                        feedback += `**Resource:** [Code Review Best Practices](https://google.github.io/eng-practices/review/)\n\n`;
+                    }
+                });
+                
+                // Add a holistic summary
+                feedback += `---\n\n`;
+                feedback += `## Overall Summary\n\n`;
+                feedback += `Great work on this code! The logic is sound and you've successfully implemented the functionality. With the suggested improvements around efficiency, naming conventions, and Pythonic expressions, this code will be even more maintainable and performant. Keep up the good work!\n\n`;
+                feedback += `Remember that code reviews are about learning and improving together. Every developer has room to grow, and these suggestions are meant to help you become even better at your craft.`;
+                
+                // Parse Markdown to HTML using marked
+                const htmlOutput = marked.parse(feedback);
+                output.innerHTML = htmlOutput;
+                output.classList.add('fade-in');
+                
+                // Add copy functionality to code blocks
+                document.querySelectorAll('pre').forEach(pre => {
+                    const button = document.createElement('button');
+                    button.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                    button.className = 'copy-btn';
+                    button.addEventListener('click', () => {
+                        navigator.clipboard.writeText(pre.querySelector('code').innerText);
+                        button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                        setTimeout(() => {
+                            button.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                        }, 2000);
+                    });
+                    pre.style.position = 'relative';
+                    pre.appendChild(button);
+                });
+                
+            } catch (error) {
+                output.innerHTML = `
+                    <div class="bg-red-400/10 border border-red-400/30 text-red-300 px-4 py-3 rounded-lg">
+                        <i class="fas fa-exclamation-triangle mr-2"></i> Error generating feedback: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Clear all inputs
+        function clearAll() {
+            document.getElementById('code').value = '';
+            document.getElementById('comment').value = '';
+            document.getElementById('output').innerHTML = `
+                <div class="text-gray-500 text-center py-12">
+                    <i class="fas fa-comment-slash text-4xl mb-3"></i>
+                    <p>Your feedback will appear here</p>
+                </div>
+            `;
+        }
+
+        // Copy feedback function
+        function copyFeedback() {
+            const outputText = document.getElementById('output').innerText;
+            navigator.clipboard.writeText(outputText).then(() => {
+                const button = document.getElementById('copyButton');
+                button.innerHTML = '<i class="fas fa-check mr-2"></i> Copied!';
+                setTimeout(() => {
+                    button.innerHTML = '<i class="fas fa-copy mr-2"></i> Copy Feedback';
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
